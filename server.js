@@ -3,13 +3,10 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 
 const app = express();
-
 const PORT = process.env.PORT || 5000;
-
 const JWT_SECRET = "mysecretkey";
 
 app.use(cors());
-
 app.use(express.json());
 
 let users = [];
@@ -42,13 +39,8 @@ const generateToken = (user) => {
   );
 };
 
-const verifyToken = (
-  req,
-  res,
-  next
-) => {
-  const authHeader =
-    req.headers.authorization;
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
   if (!authHeader) {
     return res.status(401).json({
@@ -56,17 +48,11 @@ const verifyToken = (
     });
   }
 
-  const token =
-    authHeader.split(" ")[1];
+  const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(
-      token,
-      JWT_SECRET
-    );
-
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
-
     next();
   } catch (error) {
     return res.status(401).json({
@@ -82,19 +68,15 @@ app.get("/", (req, res) => {
 });
 
 app.post("/signup", (req, res) => {
-  const { email, password } =
-    req.body;
+  const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({
-      message:
-        "Email and password are required",
+      message: "Email and password are required",
     });
   }
 
-  const existingUser = users.find(
-    (user) => user.email === email
-  );
+  const existingUser = users.find((user) => user.email === email);
 
   if (existingUser) {
     return res.status(400).json({
@@ -110,12 +92,10 @@ app.post("/signup", (req, res) => {
 
   users.push(newUser);
 
-  const token =
-    generateToken(newUser);
+  const token = generateToken(newUser);
 
   res.status(201).json({
-    message:
-      "User created successfully",
+    message: "User created successfully",
     token,
     user: {
       id: newUser.id,
@@ -125,13 +105,10 @@ app.post("/signup", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const { email, password } =
-    req.body;
+  const { email, password } = req.body;
 
   const user = users.find(
-    (item) =>
-      item.email === email &&
-      item.password === password
+    (item) => item.email === email && item.password === password
   );
 
   if (!user) {
@@ -152,10 +129,7 @@ app.post("/login", (req, res) => {
   });
 });
 
-app.get("/profile", verifyToken, (
-  req,
-  res
-) => {
+app.get("/profile", verifyToken, (req, res) => {
   res.json({
     message: "Protected route",
     user: req.user,
@@ -168,10 +142,7 @@ app.get("/posts", (req, res) => {
 
 app.get("/posts/:id", (req, res) => {
   const id = Number(req.params.id);
-
-  const post = posts.find(
-    (item) => item.id === id
-  );
+  const post = posts.find((item) => item.id === id);
 
   if (!post) {
     return res.status(404).json({
@@ -182,94 +153,66 @@ app.get("/posts/:id", (req, res) => {
   res.json(post);
 });
 
-app.post(
-  "/posts",
-  verifyToken,
-  (req, res) => {
-    const { title, body } =
-      req.body;
+app.post("/posts", verifyToken, (req, res) => {
+  const { title, body } = req.body;
 
-    if (!title) {
-      return res.status(400).json({
-        message: "Title is required",
-      });
-    }
-
-    const newPost = {
-      id: nextId++,
-      title,
-      body: body || "",
-    };
-
-    posts.unshift(newPost);
-
-    res.status(201).json(newPost);
-  }
-);
-
-app.put(
-  "/posts/:id",
-  verifyToken,
-  (req, res) => {
-    const id = Number(req.params.id);
-
-    const { title, body } =
-      req.body;
-
-    const index =
-      posts.findIndex(
-        (item) => item.id === id
-      );
-
-    if (index === -1) {
-      return res.status(404).json({
-        message: "Post not found",
-      });
-    }
-
-    const updatedPost = {
-      ...posts[index],
-
-      ...(title !== undefined
-        ? { title }
-        : {}),
-
-      ...(body !== undefined
-        ? { body }
-        : {}),
-    };
-
-    posts[index] = updatedPost;
-
-    res.json(updatedPost);
-  }
-);
-
-app.delete(
-  "/posts/:id",
-  verifyToken,
-  (req, res) => {
-    const id = Number(req.params.id);
-
-    const index =
-      posts.findIndex(
-        (item) => item.id === id
-      );
-
-    if (index === -1) {
-      return res.status(404).json({
-        message: "Post not found",
-      });
-    }
-
-    posts.splice(index, 1);
-
-    res.json({
-      message:
-        "Post deleted successfully",
+  if (!title) {
+    return res.status(400).json({
+      message: "Title is required",
     });
   }
-);
+
+  const newPost = {
+    id: nextId++,
+    title,
+    body: body || "",
+  };
+
+  posts.unshift(newPost);
+
+  res.status(201).json(newPost);
+});
+
+app.put("/posts/:id", verifyToken, (req, res) => {
+  const id = Number(req.params.id);
+  const { title, body } = req.body;
+
+  const index = posts.findIndex((item) => item.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({
+      message: "Post not found",
+    });
+  }
+
+  const updatedPost = {
+    ...posts[index],
+    ...(title !== undefined ? { title } : {}),
+    ...(body !== undefined ? { body } : {}),
+  };
+
+  posts[index] = updatedPost;
+
+  res.json(updatedPost);
+});
+
+app.delete("/posts/:id", verifyToken, (req, res) => {
+  const id = Number(req.params.id);
+
+  const index = posts.findIndex((item) => item.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({
+      message: "Post not found",
+    });
+  }
+
+  posts.splice(index, 1);
+
+  res.json({
+    message: "Post deleted successfully",
+  });
+});
 
 app.use((req, res) => {
   res.status(404).json({
@@ -278,7 +221,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(
-    `Server running on ${PORT}`
-  );
+  console.log(`Server running on ${PORT}`);
 });
